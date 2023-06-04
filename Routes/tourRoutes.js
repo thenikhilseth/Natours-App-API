@@ -1,4 +1,7 @@
 const express = require('express');
+const authController = require('./../routeHandlers/authController');
+const reviewController = require('./../routeHandlers/reviewController');
+const reviewRouter = require('./reviewRoutes');
 const {
   getAllTours,
   getOneTour,
@@ -20,13 +23,27 @@ router.route('/get-tour-status').get(getTourStatus);
 
 router
   .route('/')
-  .get(getAllTours)
+  .get(authController.protectedRoute, getAllTours)
   .post(createTour);
 
 router
   .route('/:id')
   .get(getOneTour)
   .patch(updateTour)
-  .delete(deleteTour);
+  .delete(
+    authController.protectedRoute,
+    authController.permission('admin', 'lead-guide'),
+    deleteTour
+  );
 
+// router
+//   .route('/:tourId/reviews')
+//   .post(
+//     authController.protectedRoute,
+//     authController.permission('user'),
+//     reviewController.createReview
+//   );
+
+router.use('/:tourId/reviews', reviewRouter); //router is also a middleware, so we can use use method on router.
+//like we did app.use(url, router) in app file.
 module.exports = router;

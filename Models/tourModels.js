@@ -34,7 +34,7 @@ const tourSchema = new mongoose.Schema(
       type: String,
       required: [true, 'A tour must have a difficulty'],
       enum: {
-        values: ['easy', 'medium', 'hard'],
+        values: ['easy', 'medium', 'hard', 'difficult'],
         message: 'Difficulty must be either easy, medium or hard'
       }
     },
@@ -85,8 +85,39 @@ const tourSchema = new mongoose.Schema(
       default: Date.now(),
       select: false //it vl hide this field to client.
     },
-    startDates: [Date]
+    startDates: [Date],
+    startLocation: {
+      //GeoJSON
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point']
+      },
+      coordinates: [Number],
+      address: String,
+      description: String
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point']
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number
+      }
+    ],
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+      }
+    ]
   },
+
   {
     toJSON: { virtuals: true }, //Because we are sending JSON response to client and we do virtuals for clients only
     toObject: { virtuals: true }
@@ -108,9 +139,8 @@ tourSchema.pre('save', function(next) {
   next();
 });
 
-tourSchema.post('save', function(doc, next) {
-  // console.log(doc);
-  console.log('Document Saved');
+tourSchema.pre('save', function(next) {
+  this.nameInCapital = slugify(this.name, { lower: true });
   next();
 });
 
@@ -122,6 +152,26 @@ tourSchema.pre(/^find/, function(next) {
   this.start = Date.now();
   next();
 });
+
+//We can add it directly to all the find functions but it is better to make a middleware rather than
+//duplicating the code. It worked for Update operations too that start with Find.
+
+//POPULATING TOUR GUIDES
+tourSchema.pre(/^find/, function(next) {
+  this.populate({
+    path: 'guides', //which document field to populate
+    select: '-__v -passwordChangedAt' //to hide some fields
+  });
+  next();
+});
+
+//Virtually Populating (We will display reviews in the getTour request without storing the reviews in Tour)
+
+// tourSchema.virtual('reviews', {
+//   ref: 'Review', //Referening to Review Schema Model
+//   foreignField: 'tour', //tour field in Review Model
+//   localField: '_id' //id of our tour
+// });
 
 tourSchema.post(/^find/, function(docs, next) {
   console.log(`Query took ${Date.now() - this.start} milliseconds!`);

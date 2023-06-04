@@ -1,17 +1,12 @@
 const Tour = require('./../Models/tourModels');
 const APIFeatures = require('./../Util/APIFeatures');
+const catchAsync = require('./../Util/catchAsync');
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = 5;
   req.query.sort = 'price -ratingsAverage';
   req.query.fields = 'name price ratingAverage difficulty summary';
   next();
-};
-
-const catchAsync = function(func) {
-  return (req, res, next) => {
-    func(req, res, next).catch(err => next(err));
-  };
 };
 
 //2)  Tour Route Handlers
